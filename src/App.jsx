@@ -1,4 +1,19 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect, Component } from "react";
+
+// --- Error Boundary ---
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{ padding: 16, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12, color: "#991b1b" }}>
+        計算中にエラーが発生しました。入力値を確認してください。
+        <button onClick={() => this.setState({ hasError: false })} style={{ marginLeft: 8, fontSize: 11, cursor: "pointer" }}>再試行</button>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
 
 // --- Mobile detection hook ---
 function useIsMobile(breakpoint = 640) {
@@ -75,10 +90,12 @@ function solveIRR(cashflows) {
 }
 
 function calc(fund, tax) {
+  try {
   const y = parseFloat(fund.yield) / 100 || 0;
   const m = parseFloat(fund.months) || 0;
   const amt = (parseFloat(fund.amount) || 0) * 10000;
-  if (amt <= 0 || m <= 0) return null;
+  if (!isFinite(amt) || amt <= 0 || !isFinite(m) || m <= 0) return null;
+  if (!isFinite(y)) return null;
 
   const waitD = resolveDays(fund.waitMode, fund.waitDays, fund.waitDateStart, fund.waitDateEnd);
   const retD = resolveDays(fund.returnMode, fund.returnDays, fund.returnDateStart, fund.returnDateEnd);
@@ -87,14 +104,14 @@ function calc(fund, tax) {
   const totalMonths = totalDays / 30.44;
 
   const profit = amt * y * (m / 12);
-  const campAmt = calcCampaignTotal(fund.campaigns, amt);
+  const campAmt = calcCampaignTotal(fund.campaigns || [], amt);
   const realYield = y * (opDays / (waitD + opDays));
   const campYield = totalMonths > 0 ? ((profit + campAmt) / amt) * (12 / totalMonths) : 0;
 
   // Build cash flow timeline for IRR
   const cashflows = [{ day: 0, amount: -amt }]; // investment outflow at day 0
   // Campaign inflows at their respective timings
-  fund.campaigns.forEach(c => {
+  (fund.campaigns || []).forEach(c => {
     if (!c.enabled) return;
     const cAmt = c.type === "fixed" ? (parseFloat(c.value) || 0) : amt * ((parseFloat(c.value) || 0) / 100);
     if (cAmt <= 0) return;
@@ -132,6 +149,7 @@ function calc(fund, tax) {
     r.corporate = calcTax((parseFloat(tax.corpRate) || 0) / 100);
   }
   return r;
+  } catch (e) { console.error("calc error:", e); return null; }
 }
 
 // --- Styles ---
@@ -649,17 +667,18 @@ function FundResult({ fund, index, tax, isMobile }) {
   const r = calc(fund, tax);
   const cardRef = useRef(null);
   const tracked = useRef(false);
+  const handleCapture = useCallback(async () => {
+    if (!cardRef.current) return null;
+    await document.fonts.ready;
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(cardRef.current, { width: 1200, height: 1200, scale: 1, useCORS: true, backgroundColor: null });
+  }, []);
+
   if (!r) return null;
   if (!tracked.current) { tracked.current = true; trackEvent("calc_result", { fund_name: fund.name || `ファンド${index + 1}`, irr: r.irr ? (r.irr * 100).toFixed(2) : null }); }
   const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
   const yen = n => isFinite(n) ? (n < 0 ? `▲¥${Math.abs(Math.round(n)).toLocaleString()}` : `¥${Math.round(n).toLocaleString()}`) : "—";
   const g = isMobile ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } : S.g4;
-
-  const handleCapture = useCallback(async () => {
-    await document.fonts.ready;
-    const html2canvas = (await import("html2canvas")).default;
-    return html2canvas(cardRef.current, { width: 1200, height: 1200, scale: 1, useCORS: true, backgroundColor: null });
-  }, []);
 
   const name = fund.name || `ファンド${index + 1}`;
   const nominalYield = parseFloat(fund.yield) || 0;
@@ -921,9 +940,9 @@ export default function App() {
         {funds.map((f, i) => <FundInput key={i} fund={f} index={i} onUpdate={up} onRemove={rm} onCopy={cp} canRemove={funds.length > 1} isFirst={i === 0} isMobile={isMobile} />)}
 
         <h2 style={{ fontSize: 14, fontWeight: 700, margin: "18px 0 8px" }}>📊 計算結果</h2>
-        {funds.map((f, i) => <FundResult key={i} fund={f} index={i} tax={tax} isMobile={isMobile} />)}
+        {funds.map((f, i) => <ErrorBoundary key={i}><FundResult fund={f} index={i} tax={tax} isMobile={isMobile} /></ErrorBoundary>)}
 
-        <CompTable funds={funds} tax={tax} />
+        <ErrorBoundary><CompTable funds={funds} tax={tax} /></ErrorBoundary>
         <LLMExport funds={funds} tax={tax} />
 
         <div style={{ ...S.sec, fontSize: 11, color: "#64748b", lineHeight: 1.7 }}>
