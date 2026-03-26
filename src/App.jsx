@@ -154,18 +154,18 @@ function calc(fund, tax) {
 
 // --- Styles ---
 const S = {
-  page: { minHeight: "100vh", fontFamily: "'Noto Sans JP',sans-serif", background: "#f3f5f8", color: "#1a2332" },
+  page: { minHeight: "100vh", fontFamily: "'Noto Sans JP',-apple-system,BlinkMacSystemFont,'Hiragino Sans','Hiragino Kaku Gothic ProN',Meiryo,sans-serif", background: "#f3f5f8", color: "#1a2332" },
   hdr: { background: "linear-gradient(135deg,#0c1e33,#1a3a5c)", padding: "20px 20px 16px", color: "#fff" },
   wrap: { maxWidth: 1000, margin: "0 auto", padding: "0 12px" },
   sec: { background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: 16, marginBottom: 14 },
   lbl: { display: "block", fontSize: 10.5, color: "#5a6a7e", marginBottom: 3, fontWeight: 500 },
-  inp: { width: "100%", padding: "7px 9px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 13, fontFamily: "'DM Mono',monospace", background: "#f8fafc", outline: "none", boxSizing: "border-box" },
+  inp: { width: "100%", padding: "7px 9px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 13, fontFamily: "'DM Mono','SF Mono',Consolas,Monaco,monospace", background: "#f8fafc", outline: "none", boxSizing: "border-box" },
   dinp: { width: "100%", padding: "6px 8px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 12, background: "#f8fafc", outline: "none", boxSizing: "border-box" },
   sel: { padding: "6px 8px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 11, background: "#f8fafc", outline: "none" },
   btn: { background: "#1a3a5c", color: "#fff", border: "none", borderRadius: 6, padding: "7px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" },
   gbtn: { background: "transparent", color: "#1a3a5c", border: "1px solid #1a3a5c", borderRadius: 6, padding: "5px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer" },
   tag: (bg, c) => ({ display: "inline-block", background: bg, color: c, padding: "1px 7px", borderRadius: 3, fontSize: 9.5, fontWeight: 700, marginRight: 4 }),
-  mono: { fontFamily: "'DM Mono',monospace" },
+  mono: { fontFamily: "'DM Mono','SF Mono',Consolas,Monaco,monospace" },
   g2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 },
   g3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 },
   g4: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8 },
@@ -297,7 +297,7 @@ function CampaignItem({ camp, index, onChange }) {
   const up = (k, v) => onChange({ ...camp, [k]: v });
   if (!camp.enabled) {
     return (
-      <button onClick={() => up("enabled", true)} style={{ ...S.gbtn, fontSize: 10, color: "#94a3b8", borderColor: "#d0d7de", width: "100%" }}>
+      <button onClick={() => up("enabled", true)} style={{ ...S.gbtn, fontSize: 10, color: "#64748b", borderColor: "#d0d7de", width: "100%" }}>
         ＋ キャンペーン{index + 1}を追加
       </button>
     );
@@ -311,7 +311,7 @@ function CampaignItem({ camp, index, onChange }) {
             <option value="fixed">定額（円）</option>
             <option value="rate">定率（投資額の%）</option>
           </select>
-          <button onClick={() => onChange({ ...EMPTY_CAMP })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#94a3b8", padding: 0 }}>✕</button>
+          <button onClick={() => onChange({ ...EMPTY_CAMP })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#64748b", padding: 0 }}>✕</button>
         </div>
       </div>
       <div style={S.g2}>
@@ -326,7 +326,7 @@ function DividendItem({ div, index, onChange, investAmt }) {
   const up = (k, v) => onChange({ ...div, [k]: v });
   if (!div.enabled) {
     return (
-      <button onClick={() => up("enabled", true)} style={{ ...S.gbtn, fontSize: 10, color: "#94a3b8", borderColor: "#d0d7de", width: "100%" }}>
+      <button onClick={() => up("enabled", true)} style={{ ...S.gbtn, fontSize: 10, color: "#64748b", borderColor: "#d0d7de", width: "100%" }}>
         ＋ 配当{index + 1}を追加
       </button>
     );
@@ -347,8 +347,8 @@ function DividendItem({ div, index, onChange, investAmt }) {
         <input type="number" value={div.value} onChange={e => up("value", e.target.value)} step="any" style={{ ...S.inp, padding: "5px 6px", fontSize: 12 }} />
         <span style={{ fontSize: 10, color: "#4a5568", whiteSpace: "nowrap" }}>{div.type === "rate" ? "%" : "円"}</span>
       </div>
-      {amt > 0 && <span style={{ fontSize: 9, color: "#94a3b8", whiteSpace: "nowrap" }}>≈¥{Math.round(amt).toLocaleString()}</span>}
-      <button onClick={() => onChange({ ...EMPTY_DIV })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#94a3b8", padding: 0 }}>✕</button>
+      {amt > 0 && <span style={{ fontSize: 9, color: "#64748b", whiteSpace: "nowrap" }}>≈¥{Math.round(amt).toLocaleString()}</span>}
+      <button onClick={() => onChange({ ...EMPTY_DIV })} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#64748b", padding: 0 }}>✕</button>
     </div>
   );
 }
@@ -371,7 +371,7 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {!isFirst && <button onClick={() => onCopy(index)} style={S.gbtn}>📋 前をコピー</button>}
-          {canRemove && <button onClick={() => onRemove(index)} style={{ ...S.gbtn, color: "#94a3b8", borderColor: "#d0d7de" }}>✕</button>}
+          {canRemove && <button onClick={() => onRemove(index)} style={{ ...S.gbtn, color: "#64748b", borderColor: "#d0d7de" }}>✕</button>}
         </div>
       </div>
 
@@ -421,7 +421,7 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
         </button>
         {fund.showCampaign && (
           <div style={{ marginTop: 8, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px dashed #d0d7de", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
+            <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>
               Amazonギフト券、ワイズコイン等のキャンペーン還元を登録できます。複数のキャンペーンが併用されている場合は追加してください。
             </div>
             {fund.campaigns.map((c, i) => <CampaignItem key={i} camp={c} index={i} onChange={c => upCamp(i, c)} />)}
@@ -433,11 +433,11 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
       <div style={{ marginTop: 6 }}>
         <button onClick={() => up("showDividends", !fund.showDividends)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#475569", padding: 0, fontWeight: 600 }}>
           {fund.showDividends ? "▾" : "▸"} 📅 配当スケジュール
-          {fund.dividends.some(d => d.enabled) ? <span style={{ ...S.tag("#dbeafe", "#1e40af"), marginLeft: 6 }}>設定あり</span> : <span style={{ fontSize: 10, color: "#94a3b8", marginLeft: 6 }}>（設定なし＝運用終了時に一括配当として計算）</span>}
+          {fund.dividends.some(d => d.enabled) ? <span style={{ ...S.tag("#dbeafe", "#1e40af"), marginLeft: 6 }}>設定あり</span> : <span style={{ fontSize: 10, color: "#64748b", marginLeft: 6 }}>（設定なし＝運用終了時に一括配当として計算）</span>}
         </button>
         {fund.showDividends && (
           <div style={{ marginTop: 8, padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px dashed #d0d7de", display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
+            <div style={{ fontSize: 10, color: "#64748b", marginBottom: 2 }}>
               運用期間中に中間配当があるファンドの場合、配当タイミングを登録するとIRRに反映されます。設定しない場合は、運用終了時に一括配当されるものとして計算します。
               「投資額の%」は配当1回あたりの実受取率（年利換算ではなく実額ベース）を入力してください。
             </div>
@@ -707,7 +707,7 @@ function FundResult({ fund, index, tax, isMobile }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: isMobile ? "wrap" : "nowrap" }}>
         <span style={{ background: "#1a3a5c", color: "#fff", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span>
         <span style={{ fontWeight: 700, fontSize: 13 }}>{name}</span>
-        <span style={{ fontSize: 10, color: "#94a3b8" }}>拘束 {f2(r.totalDays, 0)}日（待機{r.waitD}日 + 運用{r.opDays}日 + 償還{r.retD}日）</span>
+        <span style={{ fontSize: 10, color: "#64748b" }}>拘束 {f2(r.totalDays, 0)}日（待機{r.waitD}日 + 運用{r.opDays}日 + 償還{r.retD}日）</span>
         <span style={{ marginLeft: "auto" }}>
           <ShareButton label={name} onCapture={handleCapture} tweetText={tweetText} />
         </span>
@@ -963,8 +963,8 @@ export default function App() {
           <p style={{ margin: 0 }}><strong>資金遊休期間の比較：</strong>「入金日 / 資金確保日」に手元資金が空いた日を入力すれば、資金の遊休期間も含めた投資効率の比較が可能です。複数ファンドで同じ日を起算点にすることで、フェアな比較ができます。</p>
         </div>
 
-        <div style={{ ...S.sec, fontSize: 10, color: "#94a3b8", lineHeight: 1.7, background: "#fafbfc" }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginTop: 0, marginBottom: 6 }}>⚠️ 免責事項</h2>
+        <div style={{ ...S.sec, fontSize: 10, color: "#5a6a7e", lineHeight: 1.7, background: "#fafbfc" }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginTop: 0, marginBottom: 6 }}>⚠️ 免責事項</h2>
           <p style={{ margin: "0 0 4px" }}>本ツールは、不動産クラウドファンディングへの投資検討にあたっての参考情報を提供するものであり、特定のファンドや事業者への投資を推奨するものではありません。</p>
           <p style={{ margin: "0 0 4px" }}>表示される計算結果は、ユーザーが入力した数値に基づく試算であり、実際の投資成果を保証するものではありません。利回りや運用期間は変動する可能性があります。</p>
           <p style={{ margin: "0 0 4px" }}>税金に関する計算は簡易的なシミュレーションであり、税務アドバイスには該当しません。実際の確定申告や税務判断については、税理士等の専門家にご相談ください。</p>
@@ -972,7 +972,7 @@ export default function App() {
         </div>
       </main>
 
-      <footer style={{ textAlign: "center", padding: "16px 0 24px", fontSize: 11, color: "#94a3b8" }}>
+      <footer style={{ textAlign: "center", padding: "16px 0 24px", fontSize: 11, color: "#64748b" }}>
         © 2026 FudoCalc
       </footer>
     </div>
