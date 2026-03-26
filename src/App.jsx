@@ -158,7 +158,7 @@ const S = {
   hdr: { background: "linear-gradient(135deg,#0c1e33,#1a3a5c)", padding: "20px 20px 16px", color: "#fff" },
   wrap: { maxWidth: 1000, margin: "0 auto", padding: "0 12px" },
   sec: { background: "#fff", borderRadius: 10, border: "1px solid #e2e8f0", padding: 16, marginBottom: 14 },
-  lbl: { display: "block", fontSize: 10.5, color: "#7a8a9e", marginBottom: 3, fontWeight: 500 },
+  lbl: { display: "block", fontSize: 10.5, color: "#5a6a7e", marginBottom: 3, fontWeight: 500 },
   inp: { width: "100%", padding: "7px 9px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 13, fontFamily: "'DM Mono',monospace", background: "#f8fafc", outline: "none", boxSizing: "border-box" },
   dinp: { width: "100%", padding: "6px 8px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 12, background: "#f8fafc", outline: "none", boxSizing: "border-box" },
   sel: { padding: "6px 8px", border: "1px solid #d0d7de", borderRadius: 5, fontSize: 11, background: "#f8fafc", outline: "none" },
@@ -200,10 +200,10 @@ function Tip({ text }) {
 
 function F({ label, children, style, tip }) {
   return (
-    <div style={{ marginBottom: 8, ...style }}>
-      <label style={S.lbl}>{label}{tip && <Tip text={tip} />}</label>
+    <label style={{ display: "block", marginBottom: 8, ...style }}>
+      <span style={S.lbl}>{label}{tip && <Tip text={tip} />}</span>
       {children}
-    </div>
+    </label>
   );
 }
 function I({ label, value, onChange, suffix, style, tip }) {
@@ -248,7 +248,7 @@ function TaxPanel({ tax, onChange, isMobile }) {
   return (
     <div style={S.sec}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>⚙️ 税金設定</h3>
+        <h2 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>⚙️ 税金設定</h2>
         <Toggle options={tabs} value={tax.entity} onChange={v => up("entity", v)} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
@@ -751,7 +751,7 @@ function CompTable({ funds, tax }) {
     <div style={S.sec}>
       <ShareCardComparison funds={funds} tax={tax} cardRef={compCardRef} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>⚖️ ファンド比較</h3>
+        <h2 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>⚖️ ファンド比較</h2>
         <ShareButton label="比較結果" onCapture={handleCompCapture} tweetText={compTweetText} />
       </div>
       <div style={{ overflowX: "auto" }}>
@@ -883,7 +883,7 @@ function LLMExport({ funds, tax }) {
   return (
     <div style={S.sec}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>🤖 LLMに情報連携する</h3>
+        <h2 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>🤖 LLMに情報連携する</h2>
         <button onClick={handleCopy} style={{ ...S.btn, background: copied ? "#059669" : "#1a3a5c", fontSize: 11, padding: "5px 12px" }}>
           {copied ? "✓ コピーしました" : "📋 クリップボードにコピー"}
         </button>
@@ -930,7 +930,7 @@ export default function App() {
         </div>
       </header>
 
-      <div style={{ ...S.wrap, padding: "14px 12px 40px" }}>
+      <main style={{ ...S.wrap, padding: "14px 12px 40px" }}>
         <TaxPanel tax={tax} onChange={setTax} isMobile={isMobile} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "14px 0 8px" }}>
@@ -947,15 +947,15 @@ export default function App() {
         <LLMExport funds={funds} tax={tax} />
 
         <div style={{ ...S.sec, fontSize: 11, color: "#64748b", lineHeight: 1.7 }}>
-          <h3 style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginTop: 0, marginBottom: 8 }}>📖 計算ロジック・注意事項</h3>
+          <h2 style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginTop: 0, marginBottom: 8 }}>📖 計算ロジック・注意事項</h2>
 
-          <h4 style={{ fontSize: 11, fontWeight: 700, color: "#475569", margin: "0 0 4px" }}>各指標の定義</h4>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: "#475569", margin: "0 0 4px" }}>各指標の定義</h3>
           <p style={{ margin: "0 0 5px" }}><strong>公表利回り（年利）：</strong>事業者がファンド詳細ページで表示している想定利回り。運用期間中に得られる配当を年率換算した数値です。入金から運用開始までの待機期間、運用終了後の償還待ち、税金、キャンペーン還元は含まれていません。</p>
           <p style={{ margin: "0 0 5px" }}><strong>実質利回り（待機込）：</strong>入金してから運用が始まるまでの待機期間を加味した利回り。計算式は「公表利回り × 運用日数 ÷（待機日数＋運用日数）」です。資金が拘束されているのに利益を生まない期間を反映するため、公表利回りより低くなります。</p>
           <p style={{ margin: "0 0 5px" }}><strong>キャンペーン込み利回り：</strong>配当金にキャンペーン還元額（ギフト券・ポイント等）を加算し、待機期間・運用期間・償還待ちを含む総拘束期間で年率換算した利回りです。「最終的にいくら戻ってきたか」の総額ベースの指標であり、受取タイミングの時間価値は考慮しません。</p>
           <p style={{ margin: "0 0 10px" }}><strong>IRR（内部収益率）：</strong>投資開始から償還完了まで、すべてのキャッシュフロー（投資・中間配当・キャンペーン還元・最終償還）の発生タイミングを考慮した年率リターンです。同じ金額でも早く受け取れるほうが再投資に回せるため価値が高い、という「お金の時間価値」を反映しており、複数ファンドの投資効率を最も公平に比較できる指標です。</p>
 
-          <h4 style={{ fontSize: 11, fontWeight: 700, color: "#475569", margin: "0 0 4px" }}>その他</h4>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: "#475569", margin: "0 0 4px" }}>その他</h3>
           <p style={{ margin: "0 0 5px" }}><strong>税区分：</strong>匿名組合型の分配金は「雑所得」（総合課税）。源泉徴収20.42%は仮払いで、確定申告にて精算。課税所得695万円未満なら還付、超なら追加納税の可能性があります。</p>
           <p style={{ margin: "0 0 5px" }}><strong>法人：</strong>法人税率が適用。高所得個人より有利になるケースがあります。</p>
           <p style={{ margin: "0 0 5px" }}><strong>キャンペーン：</strong>還元額は非課税として計算しています（一時所得の50万円特別控除内を想定）。</p>
@@ -964,13 +964,13 @@ export default function App() {
         </div>
 
         <div style={{ ...S.sec, fontSize: 10, color: "#94a3b8", lineHeight: 1.7, background: "#fafbfc" }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginTop: 0, marginBottom: 6 }}>⚠️ 免責事項</h3>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginTop: 0, marginBottom: 6 }}>⚠️ 免責事項</h2>
           <p style={{ margin: "0 0 4px" }}>本ツールは、不動産クラウドファンディングへの投資検討にあたっての参考情報を提供するものであり、特定のファンドや事業者への投資を推奨するものではありません。</p>
           <p style={{ margin: "0 0 4px" }}>表示される計算結果は、ユーザーが入力した数値に基づく試算であり、実際の投資成果を保証するものではありません。利回りや運用期間は変動する可能性があります。</p>
           <p style={{ margin: "0 0 4px" }}>税金に関する計算は簡易的なシミュレーションであり、税務アドバイスには該当しません。実際の確定申告や税務判断については、税理士等の専門家にご相談ください。</p>
           <p style={{ margin: 0 }}>投資にあたっては、各事業者の公式サイトで最新のファンド情報・契約条件・リスク説明を必ずご確認の上、ご自身の判断と責任において行ってください。</p>
         </div>
-      </div>
+      </main>
 
       <footer style={{ textAlign: "center", padding: "16px 0 24px", fontSize: 11, color: "#94a3b8" }}>
         © 2026 FudoCalc
