@@ -1,4 +1,15 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+
+// --- Mobile detection hook ---
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 // --- GA4 helper ---
 const gtag = (...args) => { if (typeof window !== "undefined" && window.gtag) window.gtag(...args); };
@@ -202,7 +213,7 @@ function Toggle({ options, value, onChange }) {
 }
 
 // --- Tax Settings ---
-function TaxPanel({ tax, onChange }) {
+function TaxPanel({ tax, onChange, isMobile }) {
   const up = (k, v) => onChange({ ...tax, [k]: v });
   const tabs = [["personal", "個人"], ["corporate", "法人"], ["both", "個人・法人比較"]];
 
@@ -222,7 +233,7 @@ function TaxPanel({ tax, onChange }) {
         <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>⚙️ 税金設定</h3>
         <Toggle options={tabs} value={tax.entity} onChange={v => up("entity", v)} />
       </div>
-      <div style={S.g2}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
         {showPersonal && (
           <div style={{ padding: 12, background: "#f8fafc", borderRadius: 8, border: "1px solid #e8ecf0" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -325,18 +336,19 @@ function DividendItem({ div, index, onChange, investAmt }) {
 }
 
 // --- Fund Input ---
-function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst }) {
+function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst, isMobile }) {
   const up = (k, v) => onUpdate(index, { ...fund, [k]: v });
   const upCamp = (i, c) => { const cs = [...fund.campaigns]; cs[i] = c; up("campaigns", cs); };
   const upDiv = (i, d) => { const ds = [...fund.dividends]; ds[i] = d; up("dividends", ds); };
   const investAmt = (parseFloat(fund.amount) || 0) * 10000;
+  const dateGrid = { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, ...(isMobile ? {} : { maxWidth: 400 }) };
 
   return (
     <div style={S.sec}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ background: "#1a3a5c", color: "#fff", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span>
-          <input value={fund.name} onChange={e => up("name", e.target.value)} placeholder="ファンド名" style={{ border: "none", fontSize: 14, fontWeight: 700, background: "transparent", outline: "none", width: 280 }} />
+          <input value={fund.name} onChange={e => up("name", e.target.value)} placeholder="ファンド名" style={{ border: "none", fontSize: 14, fontWeight: 700, background: "transparent", outline: "none", width: isMobile ? 180 : 280 }} />
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {!isFirst && <button onClick={() => onCopy(index)} style={S.gbtn}>📋 前をコピー</button>}
@@ -344,7 +356,7 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
         </div>
       </div>
 
-      <div style={S.g3}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
         <I label="想定利回り（年利）" value={fund.yield} onChange={v => up("yield", v)} suffix="%" tip="各事業者のファンド詳細ページに記載されている「想定利回り」「予定分配率」等の数値（年利表示）を入力してください。" />
         <I label="運用期間" value={fund.months} onChange={v => up("months", v)} suffix="ヶ月" tip="ファンド詳細ページに記載の「運用期間」を月数で入力。例：6ヶ月、12ヶ月、18ヶ月など。" />
         <I label="投資予定額" value={fund.amount} onChange={v => up("amount", v)} suffix="万円" tip="このファンドに投資する（検討中の）金額を万円単位で入力してください。" />
@@ -357,7 +369,7 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
           <Toggle options={[["date", "日付"], ["days", "日数"]]} value={fund.waitMode} onChange={v => up("waitMode", v)} />
         </div>
         {fund.waitMode === "date" ? (
-          <div style={{ ...S.g2, maxWidth: 400 }}>
+          <div style={dateGrid}>
             <F label="入金日 / 資金確保日" tip="ファンドへの入金締切日、または手元に投資資金が空いた日を入力。後者を入れると、資金の遊休期間も含めた投資効率を比較できます。"><input type="date" value={fund.waitDateStart} onChange={e => up("waitDateStart", e.target.value)} style={S.dinp} /></F>
             <F label="運用開始日" tip="ファンド詳細ページに記載の「運用開始予定日」。入金締切日の数日〜数週間後に設定されていることが多いです。"><input type="date" value={fund.waitDateEnd} onChange={e => up("waitDateEnd", e.target.value)} style={S.dinp} /></F>
           </div>
@@ -373,7 +385,7 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
           <Toggle options={[["date", "日付"], ["days", "日数"]]} value={fund.returnMode} onChange={v => up("returnMode", v)} />
         </div>
         {fund.returnMode === "date" ? (
-          <div style={{ ...S.g2, maxWidth: 400 }}>
+          <div style={dateGrid}>
             <F label="運用終了日" tip="ファンド詳細ページに記載の「運用終了予定日」。キャピタル型は早期償還で前倒しになることもあります。"><input type="date" value={fund.returnDateStart} onChange={e => up("returnDateStart", e.target.value)} style={S.dinp} /></F>
             <F label="償還日" tip="元本と分配金が口座に振り込まれる予定日。運用終了から数日〜1ヶ月程度かかるのが一般的です。事業者のFAQやマイページで確認できます。"><input type="date" value={fund.returnDateEnd} onChange={e => up("returnDateEnd", e.target.value)} style={S.dinp} /></F>
           </div>
@@ -580,7 +592,7 @@ function ShareButton({ label, onCapture, tweetText }) {
 }
 
 // --- Fund Result ---
-function FundResult({ fund, index, tax }) {
+function FundResult({ fund, index, tax, isMobile }) {
   const r = calc(fund, tax);
   const cardRef = useRef(null);
   const tracked = useRef(false);
@@ -588,6 +600,7 @@ function FundResult({ fund, index, tax }) {
   if (!tracked.current) { tracked.current = true; trackEvent("calc_result", { fund_name: fund.name || `ファンド${index + 1}`, irr: r.irr ? (r.irr * 100).toFixed(2) : null }); }
   const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
   const yen = n => isFinite(n) ? (n < 0 ? `▲¥${Math.abs(Math.round(n)).toLocaleString()}` : `¥${Math.round(n).toLocaleString()}`) : "—";
+  const g = isMobile ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } : S.g4;
 
   const handleCapture = useCallback(async () => {
     const html2canvas = (await import("html2canvas")).default;
@@ -600,7 +613,7 @@ function FundResult({ fund, index, tax }) {
   const TaxRow = ({ label, t }) => (
     <div style={{ marginTop: 8, padding: 10, background: "#fafbfc", borderRadius: 8, border: "1px solid #e8ecf0" }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: "#475569", marginBottom: 6 }}>{label}（税率 {f2(t.rate * 100, 1)}%）</div>
-      <div style={S.g4}>
+      <div style={g}>
         <M label="配当金（税引前）" value={yen(r.profit)} />
         <M label="源泉徴収済（20.42%）" value={yen(t.withheld)} />
         <M label={t.diff >= 0 ? "確定申告時 追加納税" : "確定申告時 還付金"} value={yen(Math.abs(t.diff))} sub={t.diff < 0 ? "戻ってくる" : "追加支払い"} />
@@ -612,7 +625,7 @@ function FundResult({ fund, index, tax }) {
   return (
     <div style={S.sec}>
       <ShareCardSingle fund={fund} r={r} cardRef={cardRef} />
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: isMobile ? "wrap" : "nowrap" }}>
         <span style={{ background: "#1a3a5c", color: "#fff", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span>
         <span style={{ fontWeight: 700, fontSize: 13 }}>{name}</span>
         <span style={{ fontSize: 10, color: "#94a3b8" }}>拘束 {f2(r.totalDays, 0)}日（待機{r.waitD}日 + 運用{r.opDays}日 + 償還{r.retD}日）</span>
@@ -620,7 +633,7 @@ function FundResult({ fund, index, tax }) {
           <ShareButton label={name} onCapture={handleCapture} tweetText={tweetText} />
         </span>
       </div>
-      <div style={S.g4}>
+      <div style={g}>
         <M label="公表利回り（年利）" value={`${f2(parseFloat(fund.yield), 1)}%`} tip="事業者がファンド詳細ページで表示している想定利回り（年利換算）。運用期間中の配当を年率に直した数値で、待機期間や税金は含まれていません。" />
         <M label="実質利回り（待機込）" value={`${f2(r.realYield * 100)}%`} accent tip="入金してから運用が始まるまでの待機期間を含めた利回り。資金が拘束されているのに利益を生まない期間を反映するため、公表利回りより低くなります。" />
         <M label="キャンペーン込み利回り" value={`${f2(r.campYield * 100)}%`} accent={r.campAmt > 0} tip="配当金にキャンペーン還元額を加算し、待機期間・償還待ちを含む総拘束期間で年率換算した利回り。ただし受取タイミングの時間価値は考慮しません。" />
@@ -662,7 +675,7 @@ function CompTable({ funds, tax }) {
         <ShareButton label="比較結果" onCapture={handleCompCapture} tweetText={compTweetText} />
       </div>
       <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
             <tr style={{ background: "#f0f4f8" }}>
               {["ファンド", "公表利回り", "実質利回り", "CP込み", "IRR", "手取り収益"].map((h, i) => (
@@ -815,6 +828,7 @@ const mkFund = (name) => ({
 });
 
 export default function App() {
+  const isMobile = useIsMobile();
   const [tax, setTax] = useState({ entity: "personal", personalMode: "income", personalIncome: "5000000", personalDirect: "30", corpRate: "25" });
   const [funds, setFunds] = useState([mkFund("ファンドA")]);
 
@@ -830,24 +844,24 @@ export default function App() {
         <div style={S.wrap}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
             <span style={{ fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,0.15)", padding: "2px 8px", borderRadius: 4 }}>BETA</span>
-            <h1 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>FudoCalc - 不動産クラウドファンディング実質利回り計算機</h1>
+            <h1 style={{ fontSize: isMobile ? 14 : 17, fontWeight: 700, margin: 0 }}>FudoCalc - 不動産クラウドファンディング実質利回り計算機</h1>
           </div>
           <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>待機期間・キャンペーン・税金（個人/法人）を考慮した実質利回り・IRRを算出。複数ファンドの比較も可能。</p>
         </div>
       </header>
 
       <div style={{ ...S.wrap, padding: "14px 12px 40px" }}>
-        <TaxPanel tax={tax} onChange={setTax} />
+        <TaxPanel tax={tax} onChange={setTax} isMobile={isMobile} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "14px 0 8px" }}>
           <h2 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>📋 ファンド情報</h2>
           {funds.length < 5 && <button onClick={add} style={S.btn}>＋ ファンド追加（{funds.length}/5）</button>}
         </div>
 
-        {funds.map((f, i) => <FundInput key={i} fund={f} index={i} onUpdate={up} onRemove={rm} onCopy={cp} canRemove={funds.length > 1} isFirst={i === 0} />)}
+        {funds.map((f, i) => <FundInput key={i} fund={f} index={i} onUpdate={up} onRemove={rm} onCopy={cp} canRemove={funds.length > 1} isFirst={i === 0} isMobile={isMobile} />)}
 
         <h2 style={{ fontSize: 14, fontWeight: 700, margin: "18px 0 8px" }}>📊 計算結果</h2>
-        {funds.map((f, i) => <FundResult key={i} fund={f} index={i} tax={tax} />)}
+        {funds.map((f, i) => <FundResult key={i} fund={f} index={i} tax={tax} isMobile={isMobile} />)}
 
         <CompTable funds={funds} tax={tax} />
         <LLMExport funds={funds} tax={tax} />
