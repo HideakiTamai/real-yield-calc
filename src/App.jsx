@@ -924,7 +924,7 @@ export default function App() {
         <div style={S.wrap}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
             <span style={{ fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,0.15)", padding: "2px 8px", borderRadius: 4 }}>BETA</span>
-            <h1 style={{ fontSize: isMobile ? 14 : 17, fontWeight: 700, margin: 0 }}>FudoCalc - 不動産クラウドファンディング実質利回り計算機</h1>
+            <h1 style={{ fontSize: isMobile ? 14 : 17, fontWeight: 700, margin: 0 }}>FudoCalc - 不動産クラウドファンディング実質利回り計算くん</h1>
           </div>
           <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>待機期間・キャンペーン・税金（個人/法人）を考慮した実質利回り・IRRを算出。複数ファンドの比較も可能。</p>
         </div>
