@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 
 // --- Tax ---
 const BRACKETS = [
@@ -425,12 +425,171 @@ function M({ label, value, sub, accent, tip }) {
   );
 }
 
+// --- Share Card (hidden, rendered offscreen for html2canvas) ---
+function ShareCardSingle({ fund, r, cardRef }) {
+  const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
+  const yen = n => isFinite(n) ? `¥${Math.round(n).toLocaleString()}` : "—";
+  const name = fund.name || "ファンド";
+  const metrics = [
+    { label: "公表利回り", value: `${f2(parseFloat(fund.yield), 1)}%` },
+    { label: "実質利回り", value: `${f2(r.realYield * 100)}%` },
+    { label: "CP込み利回り", value: `${f2(r.campYield * 100)}%` },
+    { label: "IRR（年率）", value: `${f2(r.irr * 100)}%` },
+  ];
+  return (
+    <div ref={cardRef} style={{
+      position: "fixed", left: -9999, top: -9999, width: 1200, height: 630,
+      background: "linear-gradient(135deg, #0c1e33, #1a3a5c)", fontFamily: "'Noto Sans JP', sans-serif",
+      color: "#fff", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+      padding: "40px 60px", boxSizing: "border-box",
+    }}>
+      <div style={{ position: "absolute", top: 30, left: 40, fontSize: 22, fontWeight: 700, opacity: 0.9 }}>FudoCalc</div>
+      <div style={{ position: "absolute", bottom: 30, right: 40, fontSize: 16, opacity: 0.4 }}>fudocalc.com</div>
+
+      <div style={{ fontSize: 36, fontWeight: 700, marginBottom: 12, textAlign: "center" }}>{name}</div>
+      <div style={{ fontSize: 16, opacity: 0.5, marginBottom: 40 }}>
+        投資額 {fund.amount}万円 ／ 運用{fund.months}ヶ月 ／ 待機{r.waitD}日
+      </div>
+
+      <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
+        {metrics.map((m, i) => (
+          <div key={i} style={{
+            background: i >= 1 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
+            borderRadius: 16, padding: "24px 36px", textAlign: "center", minWidth: 200,
+          }}>
+            <div style={{ fontSize: 14, opacity: 0.6, marginBottom: 8 }}>{m.label}</div>
+            <div style={{ fontSize: 40, fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>{m.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {(r.personal || r.corporate) && (
+        <div style={{ display: "flex", gap: 20, fontSize: 16, opacity: 0.7 }}>
+          {r.personal && <span>👤 個人 税引後手取り: {yen(r.personal.net)}</span>}
+          {r.corporate && <span>🏢 法人 税引後手取り: {yen(r.corporate.net)}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShareCardComparison({ funds, tax, cardRef }) {
+  const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
+  const rows = funds.map((f, i) => ({ name: f.name || `ファンド${i + 1}`, r: calc(f, tax), i })).filter(x => x.r);
+  if (rows.length < 2) return null;
+  const bestOf = fn => { let b = 0; rows.forEach((x, i) => { if (fn(x.r) > fn(rows[b].r)) b = i; }); return b; };
+  const bIRR = bestOf(r => r.irr || 0);
+  const bReal = bestOf(r => r.realYield || 0);
+
+  return (
+    <div ref={cardRef} style={{
+      position: "fixed", left: -9999, top: -9999, width: 1200, height: 630,
+      background: "linear-gradient(135deg, #0c1e33, #1a3a5c)", fontFamily: "'Noto Sans JP', sans-serif",
+      color: "#fff", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+      padding: "40px 60px", boxSizing: "border-box",
+    }}>
+      <div style={{ position: "absolute", top: 30, left: 40, fontSize: 22, fontWeight: 700, opacity: 0.9 }}>FudoCalc</div>
+      <div style={{ position: "absolute", bottom: 30, right: 40, fontSize: 16, opacity: 0.4 }}>fudocalc.com</div>
+
+      <div style={{ fontSize: 30, fontWeight: 700, marginBottom: 36 }}>⚖️ ファンド比較</div>
+
+      <table style={{ borderCollapse: "collapse", width: "90%", fontSize: 20 }}>
+        <thead>
+          <tr>
+            {["ファンド", "公表利回り", "実質利回り", "CP込み", "IRR（年率）"].map((h, i) => (
+              <th key={i} style={{ padding: "12px 16px", textAlign: i ? "center" : "left", borderBottom: "2px solid rgba(255,255,255,0.2)", fontSize: 16, fontWeight: 600, opacity: 0.7 }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((x, i) => (
+            <tr key={i}>
+              <td style={{ padding: "14px 16px", fontWeight: 700 }}>{x.name}</td>
+              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>{f2(parseFloat(funds[x.i].yield), 1)}%</td>
+              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>
+                {i === bReal && <span style={{ background: "#059669", padding: "2px 8px", borderRadius: 4, fontSize: 12, marginRight: 6 }}>BEST</span>}
+                {f2(x.r.realYield * 100)}%
+              </td>
+              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>{f2(x.r.campYield * 100)}%</td>
+              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
+                {i === bIRR && <span style={{ background: "#2563eb", padding: "2px 8px", borderRadius: 4, fontSize: 12, marginRight: 6 }}>BEST</span>}
+                {f2(x.r.irr * 100)}%
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// --- Share Button ---
+function ShareButton({ label, onCapture, tweetText }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    setOpen(o => !o);
+  }, []);
+
+  const handleDownload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const canvas = await onCapture();
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.download = `fudocalc_${label}_${date}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setLoading(false);
+    }
+  }, [onCapture, label]);
+
+  const handleTweet = useCallback(() => {
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent("https://fudocalc.com")}`;
+    window.open(url, "_blank");
+  }, [tweetText]);
+
+  return (
+    <div style={{ display: "inline-block", position: "relative" }}>
+      <button onClick={handleShare} style={{ ...S.gbtn, fontSize: 10, padding: "4px 10px", color: "#64748b", borderColor: "#d0d7de" }}>
+        📤 シェア
+      </button>
+      {open && (
+        <div style={{
+          marginTop: 6, padding: 10, background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", gap: 8, alignItems: "center",
+          animation: "slideDown 0.15s ease-out",
+        }}>
+          <style>{`@keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+          <button onClick={handleDownload} disabled={loading} style={{ ...S.btn, fontSize: 10.5, padding: "6px 12px", background: loading ? "#94a3b8" : "#1a3a5c" }}>
+            {loading ? "生成中..." : "💾 画像をダウンロード"}
+          </button>
+          <button onClick={handleTweet} style={{ ...S.btn, fontSize: 10.5, padding: "6px 12px", background: "#0f1419" }}>
+            𝕏 でシェア
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // --- Fund Result ---
 function FundResult({ fund, index, tax }) {
   const r = calc(fund, tax);
+  const cardRef = useRef(null);
   if (!r) return null;
   const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
   const yen = n => isFinite(n) ? (n < 0 ? `▲¥${Math.abs(Math.round(n)).toLocaleString()}` : `¥${Math.round(n).toLocaleString()}`) : "—";
+
+  const handleCapture = useCallback(async () => {
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(cardRef.current, { width: 1200, height: 630, scale: 1, useCORS: true, backgroundColor: null });
+  }, []);
+
+  const name = fund.name || `ファンド${index + 1}`;
+  const tweetText = `${name}の実質利回りを計算してみた📊\n公表${f2(parseFloat(fund.yield), 1)}% → 実質${f2(r.realYield * 100)}%（IRR ${f2(r.irr * 100)}%）\n#FudoCalc #不動産クラファン`;
 
   const TaxRow = ({ label, t }) => (
     <div style={{ marginTop: 8, padding: 10, background: "#fafbfc", borderRadius: 8, border: "1px solid #e8ecf0" }}>
@@ -446,10 +605,14 @@ function FundResult({ fund, index, tax }) {
 
   return (
     <div style={S.sec}>
+      <ShareCardSingle fund={fund} r={r} cardRef={cardRef} />
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
         <span style={{ background: "#1a3a5c", color: "#fff", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span>
-        <span style={{ fontWeight: 700, fontSize: 13 }}>{fund.name || `ファンド${index + 1}`}</span>
+        <span style={{ fontWeight: 700, fontSize: 13 }}>{name}</span>
         <span style={{ fontSize: 10, color: "#94a3b8" }}>拘束 {f2(r.totalDays, 0)}日（待機{r.waitD}日 + 運用{r.opDays}日 + 償還{r.retD}日）</span>
+        <span style={{ marginLeft: "auto" }}>
+          <ShareButton label={name} onCapture={handleCapture} tweetText={tweetText} />
+        </span>
       </div>
       <div style={S.g4}>
         <M label="公表利回り（年利）" value={`${f2(parseFloat(fund.yield), 1)}%`} tip="事業者がファンド詳細ページで表示している想定利回り（年利換算）。運用期間中の配当を年率に直した数値で、待機期間や税金は含まれていません。" />
@@ -466,6 +629,7 @@ function FundResult({ fund, index, tax }) {
 // --- Comparison ---
 function CompTable({ funds, tax }) {
   const rows = funds.map((f, i) => ({ name: f.name || `ファンド${i + 1}`, r: calc(f, tax), i })).filter(x => x.r);
+  const compCardRef = useRef(null);
   if (rows.length < 2) return null;
 
   const bestOf = fn => { let b = 0; rows.forEach((x, i) => { if (fn(x.r) > fn(rows[b].r)) b = i; }); return b; };
@@ -475,10 +639,22 @@ function CompTable({ funds, tax }) {
 
   const pct = (n, d = 2) => isFinite(n) ? `${(n * 100).toFixed(d)}%` : "—";
   const yen = n => isFinite(n) ? `¥${Math.round(n).toLocaleString()}` : "—";
+  const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
+
+  const handleCompCapture = useCallback(async () => {
+    const html2canvas = (await import("html2canvas")).default;
+    return html2canvas(compCardRef.current, { width: 1200, height: 630, scale: 1, useCORS: true, backgroundColor: null });
+  }, []);
+
+  const compTweetText = `ファンド比較してみた📊\n${rows.map(x => `${x.name}: IRR ${f2(x.r.irr * 100)}%`).join(" / ")}\n#FudoCalc #不動産クラファン`;
 
   return (
     <div style={S.sec}>
-      <h3 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 8px" }}>⚖️ ファンド比較</h3>
+      <ShareCardComparison funds={funds} tax={tax} cardRef={compCardRef} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>⚖️ ファンド比較</h3>
+        <ShareButton label="比較結果" onCapture={handleCompCapture} tweetText={compTweetText} />
+      </div>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
