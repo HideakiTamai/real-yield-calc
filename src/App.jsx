@@ -611,55 +611,90 @@ function ShareCardComparison({ funds, tax, cardRef }) {
   );
 }
 
-// --- Share Button ---
+// --- Share Button with Modal ---
 function ShareButton({ label, onCapture, tweetText }) {
-  const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleShare = useCallback(async () => {
-    setOpen(o => !o);
-  }, []);
-
-  const handleDownload = useCallback(async () => {
+  const handleOpen = useCallback(async () => {
     setLoading(true);
     try {
       const canvas = await onCapture();
-      const link = document.createElement("a");
-      const date = new Date().toISOString().slice(0, 10);
-      link.download = `fudocalc_${label}_${date}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      if (canvas) setImageUrl(canvas.toDataURL("image/png"));
     } finally {
       setLoading(false);
     }
-  }, [onCapture, label]);
+  }, [onCapture]);
+
+  const handleClose = useCallback(() => {
+    setImageUrl(null);
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    if (!imageUrl) return;
+    const link = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 10);
+    link.download = `fudocalc_${label}_${date}.png`;
+    link.href = imageUrl;
+    link.click();
+  }, [imageUrl, label]);
 
   const handleTweet = useCallback(() => {
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent("https://fudocalc.com")}`;
     window.open(url, "_blank");
   }, [tweetText]);
 
+  // Lock body scroll when modal open
+  useEffect(() => {
+    if (imageUrl) { document.body.style.overflow = "hidden"; }
+    else { document.body.style.overflow = ""; }
+    return () => { document.body.style.overflow = ""; };
+  }, [imageUrl]);
+
   return (
-    <div style={{ display: "inline-block", position: "relative" }}>
-      <button onClick={handleShare} style={{ ...S.gbtn, fontSize: 10, padding: "4px 10px", color: "#64748b", borderColor: "#d0d7de" }}>
-        📤 シェア
+    <>
+      <button onClick={handleOpen} disabled={loading} style={{ ...S.gbtn, fontSize: 10, padding: "4px 10px", color: "#64748b", borderColor: "#d0d7de" }}>
+        {loading ? "生成中..." : "📤 シェア"}
       </button>
-      {open && (
-        <div style={{
-          marginTop: 6, padding: 10, background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", gap: 8, alignItems: "center",
-          animation: "slideDown 0.15s ease-out",
+      {imageUrl && (
+        <div onClick={handleClose} style={{
+          position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: 20,
         }}>
-          <style>{`@keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-          <button onClick={handleDownload} disabled={loading} style={{ ...S.btn, fontSize: 10.5, padding: "6px 12px", background: loading ? "#94a3b8" : "#1a3a5c" }}>
-            {loading ? "生成中..." : "💾 画像をダウンロード"}
-          </button>
-          <button onClick={handleTweet} style={{ ...S.btn, fontSize: 10.5, padding: "6px 12px", background: "#0f1419" }}>
-            𝕏 でシェア
-          </button>
+          {/* Close button */}
+          <button onClick={handleClose} style={{
+            position: "absolute", top: 16, right: 20, background: "none", border: "none",
+            color: "#fff", fontSize: 28, cursor: "pointer", opacity: 0.7, lineHeight: 1,
+          }}>✕</button>
+
+          {/* Image preview */}
+          <img src={imageUrl} alt="シェア画像" onClick={e => e.stopPropagation()} style={{
+            maxWidth: "90vw", maxHeight: "70vh", borderRadius: 8, objectFit: "contain",
+          }} />
+
+          {/* Action buttons */}
+          <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
+            <button onClick={handleDownload} style={{ ...S.btn, fontSize: 12, padding: "8px 16px" }}>
+              💾 画像をダウンロード
+            </button>
+            <button onClick={handleTweet} style={{ ...S.btn, fontSize: 12, padding: "8px 16px", background: "#0f1419" }}>
+              𝕏 でシェア
+            </button>
+          </div>
+
+          {/* Mobile hint */}
+          {isMobile && (
+            <p onClick={e => e.stopPropagation()} style={{
+              color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 12, textAlign: "center", lineHeight: 1.6,
+            }}>
+              📱 スマホの場合：画像を長押し →「写真に追加」で保存できます
+            </p>
+          )}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -973,7 +1008,7 @@ export default function App() {
       </main>
 
       <footer style={{ textAlign: "center", padding: "16px 0 24px", fontSize: 11, color: "#64748b" }}>
-        © 2026 FudoCalc
+        © 2026 FudoCalc｜運営：<a href="https://style-shift.jp" target="_blank" rel="noopener noreferrer" style={{ color: "#64748b", textDecoration: "none", transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color = "#94a3b8"} onMouseLeave={e => e.target.style.color = "#64748b"}>合同会社StyleShift</a>
       </footer>
     </div>
   );
