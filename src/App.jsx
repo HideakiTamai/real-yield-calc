@@ -442,49 +442,102 @@ function M({ label, value, sub, accent, tip }) {
 }
 
 // --- Share Card (hidden, rendered offscreen for html2canvas) ---
+const SHARE_BG = "linear-gradient(160deg, #0a1628 0%, #122744 40%, #0f2035 100%)";
+const SHARE_FONT = "'Noto Sans JP', sans-serif";
+const SHARE_MONO = { fontFamily: "'Noto Sans JP', sans-serif", fontVariantNumeric: "tabular-nums" };
+
 function ShareCardSingle({ fund, r, cardRef }) {
   const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
   const yen = n => isFinite(n) ? `¥${Math.round(n).toLocaleString()}` : "—";
   const name = fund.name || "ファンド";
-  const metrics = [
-    { label: "公表利回り", value: `${f2(parseFloat(fund.yield), 1)}%` },
-    { label: "実質利回り", value: `${f2(r.realYield * 100)}%` },
-    { label: "CP込み利回り", value: `${f2(r.campYield * 100)}%` },
-    { label: "IRR（年率）", value: `${f2(r.irr * 100)}%` },
-  ];
+  const nominalYield = parseFloat(fund.yield) || 0;
+  const realYield = (r.realYield || 0) * 100;
+  const diff = nominalYield - realYield;
+  const campYield = (r.campYield || 0) * 100;
+  const irrVal = (r.irr || 0) * 100;
+  const hasCamp = r.campAmt > 0;
+
+  // Build sub-cards
+  const subCards = [];
+  if (hasCamp) subCards.push({ label: "CP込み", value: `${f2(campYield)}%`, diff: nominalYield - campYield });
+  subCards.push({ label: "IRR（年率）", value: `${f2(irrVal)}%`, diff: nominalYield - irrVal });
+  // Tax card
+  const netParts = [];
+  if (r.personal) netParts.push(`個人 ${yen(r.personal.net)}`);
+  if (r.corporate) netParts.push(`法人 ${yen(r.corporate.net)}`);
+  if (netParts.length) subCards.push({ label: "税引後手取り", value: netParts.join(" / "), diff: null });
+
+  const cardWidth = subCards.length === 2 ? 480 : 320;
+
   return (
     <div ref={cardRef} style={{
-      position: "fixed", left: -9999, top: -9999, width: 1200, height: 630,
-      background: "linear-gradient(135deg, #0c1e33, #1a3a5c)", fontFamily: "'Noto Sans JP', sans-serif",
-      color: "#fff", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-      padding: "40px 60px", boxSizing: "border-box",
+      position: "absolute", left: -9999, top: -9999, width: 1200, height: 1200,
+      background: SHARE_BG, fontFamily: SHARE_FONT,
+      color: "#fff", display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "52px 56px", boxSizing: "border-box",
     }}>
-      <div style={{ position: "absolute", top: 30, left: 40, fontSize: 22, fontWeight: 700, opacity: 0.9 }}>FudoCalc</div>
-      <div style={{ position: "absolute", bottom: 30, right: 40, fontSize: 16, opacity: 0.4 }}>fudocalc.com</div>
+      {/* Brand top-left */}
+      <div style={{ position: "absolute", top: 40, left: 52, fontSize: 22, fontWeight: 700, color: "#fff", opacity: 0.6, letterSpacing: 0.5 }}>FudoCalc</div>
+      {/* URL bottom-right */}
+      <div style={{ position: "absolute", bottom: 40, right: 52, fontSize: 18, color: "#fff", opacity: 0.3 }}>fudocalc.com</div>
 
-      <div style={{ fontSize: 36, fontWeight: 700, marginBottom: 12, textAlign: "center" }}>{name}</div>
-      <div style={{ fontSize: 16, opacity: 0.5, marginBottom: 40 }}>
-        投資額 {fund.amount}万円 ／ 運用{fund.months}ヶ月 ／ 待機{r.waitD}日
-      </div>
+      {/* Fund name */}
+      <div style={{ marginTop: 60, fontSize: 48, fontWeight: 700, letterSpacing: 1, textAlign: "center" }}>{name}</div>
 
-      <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
-        {metrics.map((m, i) => (
-          <div key={i} style={{
-            background: i >= 1 ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
-            borderRadius: 16, padding: "24px 36px", textAlign: "center", minWidth: 200,
-          }}>
-            <div style={{ fontSize: 14, opacity: 0.6, marginBottom: 8 }}>{m.label}</div>
-            <div style={{ fontSize: 40, fontWeight: 700, fontFamily: "'DM Mono', monospace" }}>{m.value}</div>
-          </div>
+      {/* Pill tags */}
+      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+        {[`${fund.amount}万円`, `運用${fund.months}ヶ月`, `待機${r.waitD}日`].map((t, i) => (
+          <span key={i} style={{ background: "rgba(255,255,255,0.12)", color: "#fff", borderRadius: 99, padding: "8px 24px", fontSize: 22 }}>{t}</span>
         ))}
       </div>
 
-      {(r.personal || r.corporate) && (
-        <div style={{ display: "flex", gap: 20, fontSize: 16, opacity: 0.7 }}>
-          {r.personal && <span>👤 個人 税引後手取り: {yen(r.personal.net)}</span>}
-          {r.corporate && <span>🏢 法人 税引後手取り: {yen(r.corporate.net)}</span>}
+      {/* Main yield gap area */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 40, marginTop: 80 }}>
+        {/* Nominal yield - muted + strikethrough */}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>公表利回り</div>
+          <div style={{
+            fontSize: 78, fontWeight: 700, color: "rgba(255,255,255,0.4)",
+            textDecoration: "line-through", textDecorationColor: "rgba(239,68,68,0.6)", textDecorationThickness: 3,
+            ...SHARE_MONO,
+          }}>{f2(nominalYield, 1)}%</div>
         </div>
-      )}
+
+        {/* Arrow */}
+        <div style={{ fontSize: 48, color: "#fff", marginTop: 24 }}>→</div>
+
+        {/* Real yield - hero */}
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, color: "rgba(74,222,128,0.7)", letterSpacing: 1, marginBottom: 8 }}>実質利回り</div>
+          <div style={{ fontSize: 108, fontWeight: 800, color: "#4ade80", ...SHARE_MONO }}>
+            {f2(realYield)}<span style={{ fontSize: 60 }}>%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Diff text */}
+      <div style={{ fontSize: 26, fontWeight: 600, color: "rgba(239,68,68,0.7)", marginTop: 16 }}>
+        ▼ {f2(diff, 1)}% の差（待機期間の影響）
+      </div>
+
+      {/* Separator */}
+      <div style={{ width: 120, height: 1, background: "rgba(255,255,255,0.1)", margin: "40px 0" }} />
+
+      {/* Sub-metric cards */}
+      <div style={{ display: "flex", gap: 20, justifyContent: "center" }}>
+        {subCards.map((c, i) => (
+          <div key={i} style={{
+            background: "rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 8px",
+            textAlign: "center", width: cardWidth,
+          }}>
+            <div style={{ fontSize: 18, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>{c.label}</div>
+            <div style={{ fontSize: 36, fontWeight: 600, color: "#fff", ...SHARE_MONO }}>{c.value}</div>
+            <div style={{ fontSize: 16, color: c.diff != null ? "rgba(239,68,68,0.5)" : "transparent", marginTop: 4 }}>
+              {c.diff != null ? `▼${f2(c.diff, 1)}%` : "_"}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -499,36 +552,36 @@ function ShareCardComparison({ funds, tax, cardRef }) {
 
   return (
     <div ref={cardRef} style={{
-      position: "fixed", left: -9999, top: -9999, width: 1200, height: 630,
-      background: "linear-gradient(135deg, #0c1e33, #1a3a5c)", fontFamily: "'Noto Sans JP', sans-serif",
+      position: "absolute", left: -9999, top: -9999, width: 1200, height: 1200,
+      background: SHARE_BG, fontFamily: SHARE_FONT,
       color: "#fff", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-      padding: "40px 60px", boxSizing: "border-box",
+      padding: "52px 56px", boxSizing: "border-box",
     }}>
-      <div style={{ position: "absolute", top: 30, left: 40, fontSize: 22, fontWeight: 700, opacity: 0.9 }}>FudoCalc</div>
-      <div style={{ position: "absolute", bottom: 30, right: 40, fontSize: 16, opacity: 0.4 }}>fudocalc.com</div>
+      <div style={{ position: "absolute", top: 40, left: 52, fontSize: 22, fontWeight: 700, color: "#fff", opacity: 0.6, letterSpacing: 0.5 }}>FudoCalc</div>
+      <div style={{ position: "absolute", bottom: 40, right: 52, fontSize: 18, color: "#fff", opacity: 0.3 }}>fudocalc.com</div>
 
-      <div style={{ fontSize: 30, fontWeight: 700, marginBottom: 36 }}>⚖️ ファンド比較</div>
+      <div style={{ fontSize: 36, fontWeight: 700, marginBottom: 48 }}>ファンド比較</div>
 
-      <table style={{ borderCollapse: "collapse", width: "90%", fontSize: 20 }}>
+      <table style={{ borderCollapse: "collapse", width: "92%", fontSize: 22 }}>
         <thead>
           <tr>
             {["ファンド", "公表利回り", "実質利回り", "CP込み", "IRR（年率）"].map((h, i) => (
-              <th key={i} style={{ padding: "12px 16px", textAlign: i ? "center" : "left", borderBottom: "2px solid rgba(255,255,255,0.2)", fontSize: 16, fontWeight: 600, opacity: 0.7 }}>{h}</th>
+              <th key={i} style={{ padding: "16px 18px", textAlign: i ? "center" : "left", borderBottom: "2px solid rgba(255,255,255,0.15)", fontSize: 18, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((x, i) => (
-            <tr key={i}>
-              <td style={{ padding: "14px 16px", fontWeight: 700 }}>{x.name}</td>
-              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>{f2(parseFloat(funds[x.i].yield), 1)}%</td>
-              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>
-                {i === bReal && <span style={{ background: "#059669", padding: "2px 8px", borderRadius: 4, fontSize: 12, marginRight: 6 }}>BEST</span>}
+            <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <td style={{ padding: "18px 18px", fontWeight: 700, fontSize: 22 }}>{x.name}</td>
+              <td style={{ padding: "18px 18px", textAlign: "center", color: "rgba(255,255,255,0.4)", textDecoration: "line-through", textDecorationColor: "rgba(239,68,68,0.4)", ...SHARE_MONO }}>{f2(parseFloat(funds[x.i].yield), 1)}%</td>
+              <td style={{ padding: "18px 18px", textAlign: "center", fontWeight: 700, color: i === bReal ? "#4ade80" : "#fff", ...SHARE_MONO }}>
+                {i === bReal && <span style={{ background: "#4ade80", color: "#0a1628", padding: "3px 10px", borderRadius: 4, fontSize: 13, fontWeight: 700, marginRight: 8 }}>BEST</span>}
                 {f2(x.r.realYield * 100)}%
               </td>
-              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace" }}>{f2(x.r.campYield * 100)}%</td>
-              <td style={{ padding: "14px 16px", textAlign: "center", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
-                {i === bIRR && <span style={{ background: "#2563eb", padding: "2px 8px", borderRadius: 4, fontSize: 12, marginRight: 6 }}>BEST</span>}
+              <td style={{ padding: "18px 18px", textAlign: "center", ...SHARE_MONO }}>{f2(x.r.campYield * 100)}%</td>
+              <td style={{ padding: "18px 18px", textAlign: "center", fontWeight: 700, color: i === bIRR ? "#4ade80" : "#fff", ...SHARE_MONO }}>
+                {i === bIRR && <span style={{ background: "#4ade80", color: "#0a1628", padding: "3px 10px", borderRadius: 4, fontSize: 13, fontWeight: 700, marginRight: 8 }}>BEST</span>}
                 {f2(x.r.irr * 100)}%
               </td>
             </tr>
@@ -603,12 +656,18 @@ function FundResult({ fund, index, tax, isMobile }) {
   const g = isMobile ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } : S.g4;
 
   const handleCapture = useCallback(async () => {
+    await document.fonts.ready;
     const html2canvas = (await import("html2canvas")).default;
-    return html2canvas(cardRef.current, { width: 1200, height: 630, scale: 1, useCORS: true, backgroundColor: null });
+    return html2canvas(cardRef.current, { width: 1200, height: 1200, scale: 1, useCORS: true, backgroundColor: null });
   }, []);
 
   const name = fund.name || `ファンド${index + 1}`;
-  const tweetText = `${name}の実質利回りを計算してみた📊\n公表${f2(parseFloat(fund.yield), 1)}% → 実質${f2(r.realYield * 100)}%（IRR ${f2(r.irr * 100)}%）\n#FudoCalc #不動産クラファン`;
+  const nominalYield = parseFloat(fund.yield) || 0;
+  const realYieldPct = f2(r.realYield * 100);
+  const diffPct = f2(nominalYield - r.realYield * 100, 1);
+  const irrPct = f2(r.irr * 100);
+  const netStr = r.personal ? yen(r.personal.net) : r.corporate ? yen(r.corporate.net) : "";
+  const tweetText = `${name}の利回り、公表と実質でこんなに違う📊\n公表 ${f2(nominalYield, 1)}% → 実質 ${realYieldPct}%（▼${diffPct}%）\nIRR（年率）${irrPct}%${netStr ? `｜税引後手取り ${netStr}` : ""}\n#FudoCalc #不動産クラファン`;
 
   const TaxRow = ({ label, t }) => (
     <div style={{ marginTop: 8, padding: 10, background: "#fafbfc", borderRadius: 8, border: "1px solid #e8ecf0" }}>
@@ -661,8 +720,9 @@ function CompTable({ funds, tax }) {
   const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
 
   const handleCompCapture = useCallback(async () => {
+    await document.fonts.ready;
     const html2canvas = (await import("html2canvas")).default;
-    return html2canvas(compCardRef.current, { width: 1200, height: 630, scale: 1, useCORS: true, backgroundColor: null });
+    return html2canvas(compCardRef.current, { width: 1200, height: 1200, scale: 1, useCORS: true, backgroundColor: null });
   }, []);
 
   const compTweetText = `ファンド比較してみた📊\n${rows.map(x => `${x.name}: IRR ${f2(x.r.irr * 100)}%`).join(" / ")}\n#FudoCalc #不動産クラファン`;
