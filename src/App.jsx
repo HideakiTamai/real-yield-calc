@@ -1,5 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 
+// --- GA4 helper ---
+const gtag = (...args) => { if (typeof window !== "undefined" && window.gtag) window.gtag(...args); };
+const trackEvent = (name, params) => gtag("event", name, params);
+
 // --- Tax ---
 const BRACKETS = [
   { limit: 1950000, rate: 0.05 }, { limit: 3300000, rate: 0.10 },
@@ -380,7 +384,7 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
 
       {/* Campaign section - collapsible */}
       <div>
-        <button onClick={() => up("showCampaign", !fund.showCampaign)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#475569", padding: 0, fontWeight: 600 }}>
+        <button onClick={() => { if (!fund.showCampaign) trackEvent("open_campaign_settings", { fund_name: fund.name }); up("showCampaign", !fund.showCampaign); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#475569", padding: 0, fontWeight: 600 }}>
           {fund.showCampaign ? "▾" : "▸"} 🎁 キャンペーン・ポイント設定
           {fund.campaigns.some(c => c.enabled) && <span style={{ ...S.tag("#dbeafe", "#1e40af"), marginLeft: 6 }}>設定あり</span>}
         </button>
@@ -579,7 +583,9 @@ function ShareButton({ label, onCapture, tweetText }) {
 function FundResult({ fund, index, tax }) {
   const r = calc(fund, tax);
   const cardRef = useRef(null);
+  const tracked = useRef(false);
   if (!r) return null;
+  if (!tracked.current) { tracked.current = true; trackEvent("calc_result", { fund_name: fund.name || `ファンド${index + 1}`, irr: r.irr ? (r.irr * 100).toFixed(2) : null }); }
   const f2 = (n, d = 2) => isFinite(n) ? n.toFixed(d) : "—";
   const yen = n => isFinite(n) ? (n < 0 ? `▲¥${Math.abs(Math.round(n)).toLocaleString()}` : `¥${Math.round(n).toLocaleString()}`) : "—";
 
@@ -777,6 +783,7 @@ function LLMExport({ funds, tax }) {
   }, [funds, tax]);
 
   const handleCopy = () => {
+    trackEvent("copy_llm_export", { fund_count: funds.length });
     navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   };
 
@@ -811,7 +818,7 @@ export default function App() {
   const [tax, setTax] = useState({ entity: "personal", personalMode: "income", personalIncome: "5000000", personalDirect: "30", corpRate: "25" });
   const [funds, setFunds] = useState([mkFund("ファンドA")]);
 
-  const add = () => funds.length < 5 && setFunds([...funds, mkFund(`ファンド${String.fromCharCode(65 + funds.length)}`)]);
+  const add = () => { if (funds.length < 5) { trackEvent("add_fund", { fund_count: funds.length + 1 }); setFunds([...funds, mkFund(`ファンド${String.fromCharCode(65 + funds.length)}`)]); } };
   const rm = i => setFunds(funds.filter((_, j) => j !== i));
   const up = (i, f) => setFunds(funds.map((fd, j) => j === i ? f : fd));
   const cp = i => { if (i > 0) setFunds(funds.map((fd, j) => j === i ? { ...JSON.parse(JSON.stringify(funds[i - 1])), name: `${funds[i - 1].name}（コピー）` } : fd)); };
