@@ -366,7 +366,8 @@ function FundInput({ fund, index, onUpdate, onRemove, onCopy, canRemove, isFirst
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ background: "#1a3a5c", color: "#fff", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span>
-          <input value={fund.name} onChange={e => up("name", e.target.value)} placeholder="ファンド名" style={{ border: "none", fontSize: 14, fontWeight: 700, background: "transparent", outline: "none", width: isMobile ? 180 : 280 }} />
+          <input value={fund.name} onChange={e => up("name", e.target.value)} placeholder="ファンド名を入力（シェア画像にも反映）" style={{ border: "none", borderBottom: "1px solid transparent", fontSize: 14, fontWeight: 700, background: "transparent", outline: "none", width: isMobile ? 180 : 280, cursor: "text", transition: "border-color 0.15s" }} onMouseEnter={e => e.target.style.borderBottomColor = "#94a3b8"} onMouseLeave={e => { if (document.activeElement !== e.target) e.target.style.borderBottomColor = "transparent"; }} onFocus={e => e.target.style.borderBottomColor = "#1a3a5c"} onBlur={e => e.target.style.borderBottomColor = "transparent"} />
+          <span style={{ fontSize: 12, color: "#c0c8d4", marginLeft: -4 }}>✏️</span>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {!isFirst && <button onClick={() => onCopy(index)} style={S.gbtn}>📋 前をコピー</button>}
@@ -918,7 +919,7 @@ export default function App() {
 
   return (
     <div style={S.page}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+      {/* Fonts loaded in index.html for render-blocking prevention */}
       <header style={S.hdr}>
         <div style={S.wrap}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
