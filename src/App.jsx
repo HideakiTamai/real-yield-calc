@@ -677,7 +677,7 @@ function ShareButton({ label, onCapture, tweetText }) {
           {/* Action buttons */}
           <div onClick={e => e.stopPropagation()} style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
             <button onClick={handleDownload} style={{ ...S.btn, fontSize: 12, padding: "8px 16px" }}>
-              💾 画像をダウンロード
+              💾 画像をフォルダに保存
             </button>
             <button onClick={handleTweet} style={{ ...S.btn, fontSize: 12, padding: "8px 16px", background: "#0f1419" }}>
               𝕏 でシェア
