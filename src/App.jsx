@@ -647,9 +647,9 @@ export default function App() {
         <div style={S.wrap}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 3 }}>
             <span style={{ fontSize: 10, fontWeight: 600, background: "rgba(255,255,255,0.15)", padding: "2px 8px", borderRadius: 4 }}>BETA</span>
-            <h1 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>不動産クラファン 実質利回りカリキュレーター</h1>
+            <h1 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>FudoCalc - 不動産クラウドファンディング実質利回り計算機</h1>
           </div>
-          <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>待機期間・キャンペーン・税金（個人/法人）を考慮した「本当の利回り」を算出</p>
+          <p style={{ fontSize: 11, opacity: 0.6, margin: 0 }}>待機期間・キャンペーン・税金（個人/法人）を考慮した実質利回り・IRRを算出。複数ファンドの比較も可能。</p>
         </div>
       </header>
 
@@ -694,6 +694,10 @@ export default function App() {
           <p style={{ margin: 0 }}>投資にあたっては、各事業者の公式サイトで最新のファンド情報・契約条件・リスク説明を必ずご確認の上、ご自身の判断と責任において行ってください。</p>
         </div>
       </div>
+
+      <footer style={{ textAlign: "center", padding: "16px 0 24px", fontSize: 11, color: "#94a3b8" }}>
+        © 2026 FudoCalc
+      </footer>
     </div>
   );
 }
